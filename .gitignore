@@ -1,0 +1,24 @@
+# Virtual Environment
+gnn_env/
+venv/
+.env
+
+# Python Caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# IDE / Editor configurations
+.vscode/
+.idea/
+
+# Large Model Weights (Optional: teammates can generate this by running the script)
+*.pth
+
+# Generated Data Output (Optional: include these if you want your teammates to have immediate data)
+# gnn_predictions.csv
+# node_features_X.csv
+# edge_matrix_A.csv
+# daily_returns.csv
