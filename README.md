@@ -133,6 +133,219 @@ The system naturally:
 
 ---
 
+# System Architecture Breakdown
+
+## 📂 `data_loader.py` — The Pipeline & Graph Builder
+
+This script downloads, cleans, and restructures financial market data into a mathematical graph format that an AI can understand.
+
+### The Universe
+Tracks **50 stocks** split evenly across **5 macro-sectors**:
+
+- Technology
+- Finance
+- Energy
+- Healthcare
+- Consumer
+
+### Node Features Matrix ($X$)
+
+For every stock, it extracts three normalized metrics:
+
+- Daily Return
+- 30-day Volatility
+- 200-day Momentum
+
+### Edge Adjacency Matrix ($A$)
+
+It calculates a Pearson correlation matrix of daily returns.
+
+If the correlation between two stocks is:
+
+$$
+\rho_{ij} \geq 0.60
+$$
+
+a structural link (**edge**) is created between them, mapping how shocks can propagate through the market network.
+
+### Target Creation ($y$)
+
+The pipeline looks ahead into historical data (with emphasis on the 2020 COVID market crash) and assigns labels:
+
+- **1.0** → Stock crashed by **≥ 20%**
+- **0.0** → Stock remained relatively safe
+
+---
+
+## 📂 `gnn_model.py` — The Contagion Predictor
+
+This is the core intelligence layer of the system.
+
+Unlike traditional machine learning models that treat stocks independently, this module uses a **Hierarchical Graph Convolutional Network (GCN)** to model interconnected market risk.
+
+### Micro Level
+
+Simulates how distress in one stock (e.g., Apple) propagates through correlation-based connections to neighboring stocks.
+
+### Macro Level
+
+Aggregates company-level signals into sector-level representations to estimate:
+
+- Technology Sector Health
+- Finance Sector Health
+- Energy Sector Health
+- Healthcare Sector Health
+- Consumer Sector Health
+
+### The Signal
+
+The model outputs a **Contagion Risk Probability** for every stock:
+
+$$
+\text{Contagion Risk} \in [0,1]
+$$
+
+where:
+
+- **0.0** = Low contagion vulnerability
+- **1.0** = High likelihood of being pulled into a market-wide collapse
+
+---
+
+## 📂 `portfolio_agent.py` — The Defensive Risk Manager
+
+This module acts as the institutional portfolio manager.
+
+Its purpose is to convert AI-generated contagion risk scores into actual portfolio allocations.
+
+### Market Prior
+
+Establishes baseline expected returns using:
+
+- Market capitalization weights
+- Investor risk aversion assumptions
+
+### Translating AI Signals into Finance
+
+Expected returns are adjusted according to GNN-predicted contagion risk:
+
+$$
+\text{Expected Return}
+=
+10\% - (\text{Contagion Risk} \times 30\%)
+$$
+
+Examples:
+
+| Contagion Risk | Adjusted Expected Return |
+|---------------|-------------------------|
+| 0.0 | 10% |
+| 0.5 | -5% |
+| 1.0 | -20% |
+
+### Black–Litterman Optimization
+
+Combines:
+
+- Historical market equilibrium returns (priors)
+- Forward-looking GNN risk forecasts (views)
+
+to produce more robust expected return estimates.
+
+### Efficient Frontier Optimization
+
+Runs a **Maximum Sharpe Ratio** optimization to determine the mathematically optimal portfolio weights.
+
+---
+
+## 📂 `backtest_loop.py` — The Simulation Sandbox
+
+This module provides the historical simulation framework used to evaluate the strategy.
+
+### Walk-Forward Execution
+
+The simulation advances strictly:
+
+- Month-by-month
+- In chronological order
+- Without future information leakage
+
+### Look-Ahead Bias Prevention
+
+At each simulated date, the following modules only receive information available up to that point in time:
+
+- `data_loader.py`
+- `gnn_model.py`
+- `portfolio_agent.py`
+
+This ensures all performance results are realistic and free from look-ahead bias.
+
+---
+
+# Operational Workflow
+
+When all modules are combined into a production pipeline, the system executes the following monthly cycle:
+
+```text
+[1. data_loader]
+        │
+        └── Extracts market prices and builds graph structure
+            (Nodes + Correlation Edges)
+        │
+        ▼
+[2. gnn_model]
+        │
+        └── Analyzes graph and estimates contagion risk
+        │
+        ▼
+[3. portfolio_agent]
+        │
+        └── Converts risk scores into optimized portfolio weights
+        │
+        ▼
+[4. backtest_loop]
+        │
+        └── Simulates portfolio performance
+            Advances time by one month
+            Repeats the entire process
+```
+
+## Monthly Decision Flywheel
+
+```text
+Market Data
+     │
+     ▼
+Graph Construction
+     │
+     ▼
+GNN Contagion Prediction
+     │
+     ▼
+Black-Litterman Portfolio Optimization
+     │
+     ▼
+Portfolio Allocation
+     │
+     ▼
+Performance Evaluation
+     │
+     ▼
+Advance Time (+1 Month)
+     │
+     └── Repeat
+```
+
+This creates a fully end-to-end framework that:
+
+1. Learns structural market relationships through graph networks.
+2. Predicts crash contagion risk before market stress events.
+3. Adjusts expected returns based on AI-derived risk forecasts.
+4. Constructs optimal portfolios using Black–Litterman optimization.
+5. Validates performance through realistic walk-forward backtesting.
+
+---
+
 # 🚀 Execution Pipeline
 
 Run the full simulation using a Python 3.10/3.11 virtual environment.
