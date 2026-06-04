@@ -136,6 +136,19 @@ The system naturally:
 # 🚀 Execution Pipeline
 
 Run the full simulation using a Python 3.10/3.11 virtual environment.
+### 0. Environment Setup (Python 3.11)
+Before running the pipeline, you must create and activate an isolated virtual environment to ensure the C++ and CUDA background libraries compile correctly for PyTorch Geometric.
+
+**For Windows:**
+```bash
+# Create the environment using Python 3.11
+py -3.11 -m venv gnn_env
+
+# Activate the environment
+gnn_env\Scripts\activate
+
+pip install -r requirements.txt
+```
 
 ## Step 1 — Data Engineering
 
