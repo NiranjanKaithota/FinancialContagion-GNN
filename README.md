@@ -208,9 +208,7 @@ Responsibilities:
 ```bash
 python visualize_network.py
 ```
-
-Responsibilities:
-
+(Need to change to better visualization)
 * Generate publication-quality network topology graphs
 * Visualize contagion pathways
 * Color-code firms by systemic risk score
