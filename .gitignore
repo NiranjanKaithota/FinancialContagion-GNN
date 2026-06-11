@@ -14,11 +14,12 @@ __pycache__/
 .vscode/
 .idea/
 
-# Large Model Weights (Optional: teammates can generate this by running the script)
+# Large Model Weights (rebuilt by running gnn_model.py)
 *.pth
+*.pt
 
-# Generated Data Output (Optional: include these if you want your teammates to have immediate data)
-# gnn_predictions.csv
-# node_features_X.csv
-# edge_matrix_A.csv
-# daily_returns.csv
+# Cache directory (large parquet files — rebuilt automatically on first run)
+cache/
+
+# Large generated CSVs rebuilt by data_loader.py
+crash_labels.csv
