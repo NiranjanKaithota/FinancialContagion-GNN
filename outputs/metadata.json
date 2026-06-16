@@ -1,0 +1,335 @@
+{
+  "ADANIPORTS.NS": {
+    "ticker": "ADANIPORTS.NS",
+    "name": "Adani Ports",
+    "sector": "Infra",
+    "color": "#D85A30",
+    "vol": 0.2695,
+    "beta": 1.5737,
+    "mu": 0.1888
+  },
+  "ASIANPAINT.NS": {
+    "ticker": "ASIANPAINT.NS",
+    "name": "Asian Paints",
+    "sector": "Consumer",
+    "color": "#BA7517",
+    "vol": 0.2363,
+    "beta": 1.0492,
+    "mu": 0.1137
+  },
+  "AXISBANK.NS": {
+    "ticker": "AXISBANK.NS",
+    "name": "Axis Bank",
+    "sector": "Banking",
+    "color": "#E24B4A",
+    "vol": 0.2341,
+    "beta": 1.2018,
+    "mu": 0.1063
+  },
+  "BAJAJ-AUTO.NS": {
+    "ticker": "BAJAJ-AUTO.NS",
+    "name": "Bajaj Auto",
+    "sector": "Auto",
+    "color": "#7F77DD",
+    "vol": 0.2174,
+    "beta": 1.1271,
+    "mu": 0.1634
+  },
+  "BAJAJFINSV.NS": {
+    "ticker": "BAJAJFINSV.NS",
+    "name": "Bajaj Finserv",
+    "sector": "Finance",
+    "color": "#D4537E",
+    "vol": 0.221,
+    "beta": 1.3623,
+    "mu": 0.1434
+  },
+  "BAJFINANCE.NS": {
+    "ticker": "BAJFINANCE.NS",
+    "name": "Bajaj Finance",
+    "sector": "Finance",
+    "color": "#D4537E",
+    "vol": 0.2896,
+    "beta": 1.5815,
+    "mu": 0.2051
+  },
+  "BHARTIARTL.NS": {
+    "ticker": "BHARTIARTL.NS",
+    "name": "Bharti Airtel",
+    "sector": "Telecom",
+    "color": "#639922",
+    "vol": 0.1952,
+    "beta": 0.7519,
+    "mu": 0.168
+  },
+  "BRITANNIA.NS": {
+    "ticker": "BRITANNIA.NS",
+    "name": "Britannia",
+    "sector": "FMCG",
+    "color": "#1D9E75",
+    "vol": 0.2015,
+    "beta": 0.732,
+    "mu": 0.1089
+  },
+  "CIPLA.NS": {
+    "ticker": "CIPLA.NS",
+    "name": "Cipla",
+    "sector": "Pharma",
+    "color": "#5DCAA5",
+    "vol": 0.208,
+    "beta": 0.7976,
+    "mu": 0.1073
+  },
+  "COALINDIA.NS": {
+    "ticker": "COALINDIA.NS",
+    "name": "Coal India",
+    "sector": "Energy",
+    "color": "#EF9F27",
+    "vol": 0.2198,
+    "beta": 0.4685,
+    "mu": 0.147
+  },
+  "DIVISLAB.NS": {
+    "ticker": "DIVISLAB.NS",
+    "name": "Divi's Labs",
+    "sector": "Pharma",
+    "color": "#5DCAA5",
+    "vol": 0.2198,
+    "beta": 0.853,
+    "mu": 0.224
+  },
+  "DRREDDY.NS": {
+    "ticker": "DRREDDY.NS",
+    "name": "Dr Reddy's",
+    "sector": "Pharma",
+    "color": "#5DCAA5",
+    "vol": 0.2264,
+    "beta": 0.7038,
+    "mu": 0.1244
+  },
+  "HCLTECH.NS": {
+    "ticker": "HCLTECH.NS",
+    "name": "HCL Tech",
+    "sector": "IT",
+    "color": "#378ADD",
+    "vol": 0.2579,
+    "beta": 0.9456,
+    "mu": 0.1426
+  },
+  "HDFCBANK.NS": {
+    "ticker": "HDFCBANK.NS",
+    "name": "HDFC Bank",
+    "sector": "Banking",
+    "color": "#E24B4A",
+    "vol": 0.1952,
+    "beta": 1.1313,
+    "mu": 0.07
+  },
+  "HINDALCO.NS": {
+    "ticker": "HINDALCO.NS",
+    "name": "Hindalco",
+    "sector": "Metals",
+    "color": "#888780",
+    "vol": 0.2725,
+    "beta": 1.1147,
+    "mu": 0.1666
+  },
+  "HINDUNILVR.NS": {
+    "ticker": "HINDUNILVR.NS",
+    "name": "HUL",
+    "sector": "FMCG",
+    "color": "#1D9E75",
+    "vol": 0.2048,
+    "beta": 0.7016,
+    "mu": 0.0731
+  },
+  "ICICIBANK.NS": {
+    "ticker": "ICICIBANK.NS",
+    "name": "ICICI Bank",
+    "sector": "Banking",
+    "color": "#E24B4A",
+    "vol": 0.1826,
+    "beta": 0.8352,
+    "mu": 0.1817
+  },
+  "INDUSINDBK.NS": {
+    "ticker": "INDUSINDBK.NS",
+    "name": "IndusInd Bank",
+    "sector": "Banking",
+    "color": "#E24B4A",
+    "vol": 0.2835,
+    "beta": 1.6074,
+    "mu": -0.0632
+  },
+  "INFY.NS": {
+    "ticker": "INFY.NS",
+    "name": "Infosys",
+    "sector": "IT",
+    "color": "#378ADD",
+    "vol": 0.2672,
+    "beta": 0.8614,
+    "mu": 0.1221
+  },
+  "ITC.NS": {
+    "ticker": "ITC.NS",
+    "name": "ITC",
+    "sector": "FMCG",
+    "color": "#1D9E75",
+    "vol": 0.1934,
+    "beta": 0.6189,
+    "mu": 0.0564
+  },
+  "JSWSTEEL.NS": {
+    "ticker": "JSWSTEEL.NS",
+    "name": "JSW Steel",
+    "sector": "Metals",
+    "color": "#888780",
+    "vol": 0.2308,
+    "beta": 1.3938,
+    "mu": 0.2026
+  },
+  "KOTAKBANK.NS": {
+    "ticker": "KOTAKBANK.NS",
+    "name": "Kotak Mahindra",
+    "sector": "Banking",
+    "color": "#E24B4A",
+    "vol": 0.2123,
+    "beta": 1.064,
+    "mu": 0.0854
+  },
+  "M&M.NS": {
+    "ticker": "M&M.NS",
+    "name": "Mahindra",
+    "sector": "Auto",
+    "color": "#7F77DD",
+    "vol": 0.2699,
+    "beta": 1.5644,
+    "mu": 0.1789
+  },
+  "MARUTI.NS": {
+    "ticker": "MARUTI.NS",
+    "name": "Maruti Suzuki",
+    "sector": "Auto",
+    "color": "#7F77DD",
+    "vol": 0.2281,
+    "beta": 1.1674,
+    "mu": 0.0483
+  },
+  "NESTLEIND.NS": {
+    "ticker": "NESTLEIND.NS",
+    "name": "Nestle India",
+    "sector": "FMCG",
+    "color": "#1D9E75",
+    "vol": 0.2039,
+    "beta": 0.8241,
+    "mu": 0.1639
+  },
+  "NTPC.NS": {
+    "ticker": "NTPC.NS",
+    "name": "NTPC",
+    "sector": "Energy",
+    "color": "#EF9F27",
+    "vol": 0.1831,
+    "beta": 0.7122,
+    "mu": 0.1455
+  },
+  "ONGC.NS": {
+    "ticker": "ONGC.NS",
+    "name": "ONGC",
+    "sector": "Energy",
+    "color": "#EF9F27",
+    "vol": 0.2282,
+    "beta": 0.2682,
+    "mu": 0.0865
+  },
+  "POWERGRID.NS": {
+    "ticker": "POWERGRID.NS",
+    "name": "Power Grid",
+    "sector": "Energy",
+    "color": "#EF9F27",
+    "vol": 0.1984,
+    "beta": 0.6433,
+    "mu": 0.164
+  },
+  "RELIANCE.NS": {
+    "ticker": "RELIANCE.NS",
+    "name": "Reliance",
+    "sector": "Energy",
+    "color": "#EF9F27",
+    "vol": 0.2013,
+    "beta": 0.8932,
+    "mu": 0.1417
+  },
+  "SBIN.NS": {
+    "ticker": "SBIN.NS",
+    "name": "State Bank",
+    "sector": "Banking",
+    "color": "#E24B4A",
+    "vol": 0.2226,
+    "beta": 1.0643,
+    "mu": 0.1565
+  },
+  "SUNPHARMA.NS": {
+    "ticker": "SUNPHARMA.NS",
+    "name": "Sun Pharma",
+    "sector": "Pharma",
+    "color": "#5DCAA5",
+    "vol": 0.1953,
+    "beta": 0.7227,
+    "mu": 0.1478
+  },
+  "TATASTEEL.NS": {
+    "ticker": "TATASTEEL.NS",
+    "name": "Tata Steel",
+    "sector": "Metals",
+    "color": "#888780",
+    "vol": 0.2694,
+    "beta": 1.4602,
+    "mu": 0.1565
+  },
+  "TCS.NS": {
+    "ticker": "TCS.NS",
+    "name": "TCS",
+    "sector": "IT",
+    "color": "#378ADD",
+    "vol": 0.2463,
+    "beta": 1.0217,
+    "mu": 0.085
+  },
+  "TECHM.NS": {
+    "ticker": "TECHM.NS",
+    "name": "Tech Mahindra",
+    "sector": "IT",
+    "color": "#378ADD",
+    "vol": 0.2647,
+    "beta": 0.7687,
+    "mu": 0.1598
+  },
+  "TITAN.NS": {
+    "ticker": "TITAN.NS",
+    "name": "Titan",
+    "sector": "Consumer",
+    "color": "#BA7517",
+    "vol": 0.236,
+    "beta": 1.1339,
+    "mu": 0.1956
+  },
+  "ULTRACEMCO.NS": {
+    "ticker": "ULTRACEMCO.NS",
+    "name": "UltraTech Cement",
+    "sector": "Infra",
+    "color": "#D85A30",
+    "vol": 0.2238,
+    "beta": 1.3699,
+    "mu": 0.1203
+  },
+  "WIPRO.NS": {
+    "ticker": "WIPRO.NS",
+    "name": "Wipro",
+    "sector": "IT",
+    "color": "#378ADD",
+    "vol": 0.2516,
+    "beta": 0.9096,
+    "mu": 0.0614
+  }
+}
