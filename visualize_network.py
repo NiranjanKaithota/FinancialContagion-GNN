@@ -165,7 +165,7 @@ def plot_risk_heatmap(G, pos, preds, save_path="Contagion_Heatmap.png"):
     plt.tight_layout()
     plt.savefig(save_path, dpi=300, bbox_inches="tight", facecolor=FIG_BG)
     plt.close()
-    print(f"Saved → {save_path}")
+    print(f"Saved -> {save_path}")
 
 
 def plot_sector_graph(G, preds, save_path="Contagion_Heatmap_sector.png"):
@@ -206,7 +206,7 @@ def plot_sector_graph(G, preds, save_path="Contagion_Heatmap_sector.png"):
     plt.tight_layout()
     plt.savefig(save_path, dpi=300, bbox_inches="tight", facecolor=FIG_BG)
     plt.close()
-    print(f"Saved → {save_path}")
+    print(f"Saved -> {save_path}")
 
 
 def plot_sector_risk_matrix(preds, save_path="sector_risk_matrix.png"):
@@ -268,24 +268,24 @@ def plot_sector_risk_matrix(preds, save_path="sector_risk_matrix.png"):
     plt.tight_layout()
     plt.savefig(save_path, dpi=300, bbox_inches="tight", facecolor=FIG_BG)
     plt.close()
-    print(f"Saved → {save_path}")
+    print(f"Saved -> {save_path}")
 
 
 # ──────────────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    print("[visualize_network] Loading data …")
+    print("[visualize_network] Loading data ...")
     preds, A_df, crash_labels = load_data()
 
     if A_df is None:
-        print("[warn] edge_matrix_A.csv not found — run data_loader.py first")
+        print("[warn] edge_matrix_A.csv not found - run data_loader.py first")
         import sys; sys.exit(1)
 
     G, tickers = build_graph(A_df, preds)
     pos = nx.spring_layout(G, k=1.4, seed=42, iterations=100)
 
-    print("[visualize_network] Generating figures …")
+    print("[visualize_network] Generating figures ...")
     plot_risk_heatmap(G, pos, preds,  "Contagion_Heatmap.png")
     plot_sector_graph(G, preds,        "Contagion_Heatmap_sector.png")
     plot_sector_risk_matrix(preds,     "sector_risk_matrix.png")
 
-    print("\n✓ All publication figures saved.")
+    print("\n[ok] All publication figures saved.")

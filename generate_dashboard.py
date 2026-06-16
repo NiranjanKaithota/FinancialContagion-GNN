@@ -498,15 +498,15 @@ def build_sector_area():
     if mlog is None:
         return go.Figure()
     fig = go.Figure()
-    for s in SECTORS:
-        col = f"w_{s}"
-        if col not in mlog.columns:
-            continue
+    cols = [c for c in mlog.columns if c.startswith("w_")]
+    for col in cols:
+        s = col.replace("w_", "")
+        color = SECTOR_COLORS.get(s, "#64748b")  # slate gray default for Cash
         fig.add_trace(go.Scatter(
             x=mlog["date"], y=mlog[col] * 100,
             name=s, stackgroup="one",
-            line=dict(color=SECTOR_COLORS[s], width=0),
-            fillcolor=_hex_rgba(SECTOR_COLORS[s], 0.55),
+            line=dict(color=color, width=0),
+            fillcolor=_hex_rgba(color, 0.55),
             hovertemplate=f"<b>{s}</b><br>%{{x|%b %Y}}<br>Weight: %{{y:.1f}}%<extra></extra>",
         ))
     # shade crisis periods

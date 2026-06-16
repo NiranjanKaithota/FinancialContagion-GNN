@@ -32,18 +32,21 @@ Traditional financial models often analyze assets independently. This model inst
 
 #### Node Features ($X$)
 
-Each firm is represented by:
+Each firm is represented by **13 standardized features**:
 
-* Normalized Volatility
-* Daily Returns
-* 200-Day Price Momentum
+* Immediate returns momentum: **1-day**, **5-day**, and **21-day** returns
+* Stress indicator: **21-day annualized rolling volatility**
+* SMA momentum: short momentum (**21-day SMA relative difference**) and long momentum (**63-day SMA relative difference**)
+* Technical indicator: **14-day Relative Strength Index (RSI)**
+* Market sensitivity: **63-day rolling systematic market beta vs. SPY**
+* Sector membership: **5 sector one-hot columns**
 
 #### Edges ($A$)
 
 Connections between firms are created using:
 
-* 1-Year Rolling Pearson Correlations
-* Correlation Threshold > 0.60
+* **1-Year Rolling Pearson Correlations** (252 trading days)
+* **Correlation Threshold $\geq$ 0.45** (absolute correlation value)
 
 Only statistically significant relationships are retained within the adjacency matrix.
 
@@ -71,44 +74,30 @@ where:
 
 ## 2. The Autonomous Financial Agent (Black-Litterman Optimizer)
 
-The GNN generates risk probabilities, but investment decisions require portfolio weights.
+The GNN generates contagion probabilities, but portfolio execution requires optimal allocation weights. The autonomous agent translates risk metrics into real portfolio weights:
 
-The autonomous agent converts risk predictions into actionable capital allocation decisions.
+### 2A. GNN-BL Expected Return Views
+We map the GNN contagion score $s_i \in [0, 1]$ into expected annual returns using a calibrated linear translation function:
+$$E[R_i] = 12\% - 38\% \times s_i$$
+Expected views are bounded between $[-25\%, +20\%]$. The uncertainty matrix $\Omega$ is scaled dynamically: assets with higher contagion risk are given tighter uncertainty bounds, representing the model's higher confidence in its defensive view of crash-bound firms.
 
-### Signal Translation
+### 2B. Network Centrality Risk Penalty
+Assets that are highly central within the correlation network (shock amplifiers) receive an additional penalty. We compute **betweenness centrality** on the active correlation network:
+$$\text{Composite Risk}_i = s_i + 0.10 \times \text{Centrality}_i$$
+$$E[R_i]_{\text{adjusted}} = E[R_i] - 0.05 \times \text{Composite Risk}_i$$
 
-The agent transforms contagion probabilities into investor return expectations:
+### 2C. Asymmetric Systemic Circuit Breaker (Cash Rotation)
+To protect capital during generalized market crashes, the agent runs an emergency circuit breaker:
+- If the **average GNN contagion score across all assets > 0.45**, the portfolio rotates **100% of capital into Cash**.
+- Cash holdings grow at the daily risk-free rate of **4% annualized** ($0.04 / 252$ daily).
 
-| GNN Risk Score | Investor View        |
-| -------------- | -------------------- |
-| 0.00           | +10% Expected Return |
-| 0.50           | Neutral              |
-| 0.99           | -20% Expected Return |
+### 2D. Dynamic Transaction Cost Modeling
+We incorporate realistic rebalancing friction by charging a transaction fee of **10 bps (0.10%)** of rebalanced turnover:
+$$\text{Turnover}_t = \sum_{i} |w_{i, t} - w'_{i, t-1}|$$
+where $w'_{i, t-1}$ is the asset weight adjusted for price drift at the end of the prior month. Dynamic transaction costs are applied to both the GNN Agent and the Equal Weight baseline portfolios.
 
-These views become inputs to the Black-Litterman framework.
-
-### Bayesian Updating
-
-Using **PyPortfolioOpt**, the model combines:
-
-* Historical market covariance structure
-* AI-generated absolute views
-
-to produce posterior expected returns.
-
-### Defensive Optimization
-
-The optimized portfolio is generated using:
-
-* Markowitz Efficient Frontier
-* Minimum Variance Optimization
-* Maximum Sharpe Ratio Optimization
-
-The system naturally:
-
-* Reduces exposure to highly infected assets
-* Allocates capital toward defensive sectors
-* Concentrates capital in structurally isolated safe havens
+### 2E. Defensive Optimization
+Blended Black-Litterman expected returns and a Ledoit-Wolf shrinkage covariance matrix are processed via an Efficient Frontier optimizer targeting **Maximum Sharpe Ratio** with long-only constraints ($w_i \in [0\%, 20\%]$). If optimization fails during high stress, it falls back to a Min-Volatility optimizer, and finally to inverse-risk weighting.
 
 ---
 
@@ -150,30 +139,25 @@ Tracks **50 stocks** split evenly across **5 macro-sectors**:
 
 ### Node Features Matrix ($X$)
 
-For every stock, it extracts three normalized metrics:
-
-- Daily Return
-- 30-day Volatility
-- 200-day Momentum
+For every stock, it extracts **13 normalized metrics**:
+- Returns momentum at 1-day, 5-day, and 21-day windows
+- 21-day annualized rolling volatility
+- Short-term (21-day SMA) and long-term (63-day SMA) relative momentum
+- 14-day Relative Strength Index (RSI)
+- 63-day rolling market beta vs. SPY
+- 5 sector membership one-hot columns
 
 ### Edge Adjacency Matrix ($A$)
 
-It calculates a Pearson correlation matrix of daily returns.
-
-If the correlation between two stocks is:
-
-$$
-\rho_{ij} \geq 0.60
-$$
-
-a structural link (**edge**) is created between them, mapping how shocks can propagate through the market network.
+It calculates a monthly Pearson correlation matrix of daily returns. If the absolute correlation between two stocks is:
+$$|\rho_{ij}| \geq 0.45$$
+a structural link (**edge**) is created between them, with the edge weight equal to the correlation magnitude, mapping how shocks propagate through the market network.
 
 ### Target Creation ($y$)
 
-The pipeline looks ahead into historical data (with emphasis on the 2020 COVID market crash) and assigns labels:
-
-- **1.0** → Stock crashed by **≥ 20%**
-- **0.0** → Stock remained relatively safe
+The pipeline looks ahead into historical data and assigns labels:
+- **1.0** (Crash) → Stock experienced a maximum drawdown of **$\leq -20\%$** in the next **63 trading days (approx. 3 months)**.
+- **0.0** (Safe) → Stock remained relatively safe (drawdown $> -20\%$).
 
 ---
 
@@ -181,34 +165,29 @@ The pipeline looks ahead into historical data (with emphasis on the 2020 COVID m
 
 This is the core intelligence layer of the system.
 
-Unlike traditional machine learning models that treat stocks independently, this module uses a **Hierarchical Graph Convolutional Network (GCN)** to model interconnected market risk.
+Unlike traditional machine learning models that treat stocks independently, this module uses a **Hierarchical Temporal Contagion Graph Attention Network (HTC-GNN)** to model interconnected market risk.
 
-### Micro Level
+### Micro Level (Graph Attention Layers)
+Uses two Multi-head Graph Attention Network (GAT) layers. In GAT, the model dynamically learns attention weights $\alpha_{ij}$ representing "how much firm $i$ should listen to firm $j$". This mapping represents contagion channels.
 
-Simulates how distress in one stock (e.g., Apple) propagates through correlation-based connections to neighboring stocks.
-
-### Macro Level
-
-Aggregates company-level signals into sector-level representations to estimate:
-
+### Macro Level (Sector Super-node Pooling)
+Firms are pooled by sector to form "sector super-nodes". A 2-layer sector MLP refines this macro representation to evaluate:
 - Technology Sector Health
 - Finance Sector Health
 - Energy Sector Health
 - Healthcare Sector Health
 - Consumer Sector Health
 
+### Cross-Level Attention & Temporal GRU Cell
+- **Cross-Level Attention**: Individual firms query their sector's super-node, learning how much sector-level distress impacts them.
+- **GRU Cell**: A Gated Recurrent Unit cell processes the fused embedding sequentially month-to-month, allowing historical contagion memory to accumulate across snapshots.
+
 ### The Signal
-
-The model outputs a **Contagion Risk Probability** for every stock:
-
-$$
-\text{Contagion Risk} \in [0,1]
-$$
-
+The model outputs a calibrated **Contagion Risk Probability** for each stock:
+$$\text{Contagion Risk} \in [0,1]$$
 where:
-
-- **0.0** = Low contagion vulnerability
-- **1.0** = High likelihood of being pulled into a market-wide collapse
+- **0.0** = Low contagion vulnerability ( defensive stock )
+- **1.0** = High likelihood of propagating or being pulled into systemic collapse.
 
 ---
 

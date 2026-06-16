@@ -324,7 +324,7 @@ def train_model(snapshots_train: list[dict],
                 best_val_auc = val_auc
                 patience_ctr = 0
                 torch.save(model.state_dict(), MODEL_PATH)
-                print(f"           ↑ New best AUROC {best_val_auc:.4f} — model saved.")
+                print(f"           ^ New best AUROC {best_val_auc:.4f} - model saved.")
             else:
                 patience_ctr += 1
                 if patience_ctr >= patience:

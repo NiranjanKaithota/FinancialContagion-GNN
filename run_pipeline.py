@@ -32,25 +32,25 @@ def main():
                         help="Force re-download and re-build all cached data")
     args = parser.parse_args()
 
-    print("\n" + "═" * 65)
-    print("  FinContagion-GNN  —  Full Research Pipeline")
-    print("═" * 65 + "\n")
+    print("\n" + "=" * 65)
+    print("  FinContagion-GNN  -  Full Research Pipeline")
+    print("=" * 65 + "\n")
 
     if not args.dashboard:
 
         # ── STEP 1: DATA ─────────────────────────────────────────────────────
         if not args.skip_train:
-            print("▶ STEP 1: Building dataset from Yahoo Finance …")
+            print("[step 1] Building dataset from Yahoo Finance ...")
             from data_loader import build_dataset
             prices, features_long, adjacencies, crash_labels, spy = \
                 build_dataset(force_rebuild=args.force_rebuild)
-            print(f"  ✓ Prices: {prices.shape}   "
+            print(f"  [ok] Prices: {prices.shape}   "
                   f"Snapshots: {len(adjacencies)}   "
                   f"Labels: {crash_labels.shape}\n")
 
         # ── STEP 2 & 3: GNN TRAINING + EVAL ──────────────────────────────────
         if not args.skip_train:
-            print("▶ STEP 2: Training HTC-GNN …")
+            print("[step 2] Training HTC-GNN ...")
             from data_loader import (build_dataset, get_snapshot,
                                       SECTOR_MAP, STOCK_UNIVERSE, NUMERIC_FEATS)
             from gnn_model import (HTCGNNModel, build_pyg_data,
@@ -91,20 +91,20 @@ def main():
             model = train_model(tr_snaps, va_snaps,
                                 num_features=len(NUMERIC_FEATS))
 
-            print("\n▶ STEP 3: Test-set evaluation …")
+            print("\n[step 3] Test-set evaluation ...")
             summary = evaluate_model(model, te_snaps, list(SECTOR_MAP.keys()))
             summary.to_csv("gnn_predictions.csv")
-            print(f"\n  ✓ Predictions saved → gnn_predictions.csv\n")
+            print(f"\n  [ok] Predictions saved -> gnn_predictions.csv\n")
 
         # ── STEP 4: BACKTEST ─────────────────────────────────────────────────
         if not args.skip_backtest:
-            print("▶ STEP 4: Running walk-forward backtest …")
+            print("[step 4] Running walk-forward backtest ...")
             from backtest_loop import run_backtest
             results, metrics, monthly = run_backtest()
-            print("  ✓ Backtest complete.\n")
+            print("  [ok] Backtest complete.\n")
 
         # ── STEP 5: STATIC FIGURES ────────────────────────────────────────────
-        print("▶ STEP 5: Generating publication figures …")
+        print("[step 5] Generating publication figures ...")
         try:
             from visualize_network import (load_data, build_graph,
                                             plot_risk_heatmap, plot_sector_graph,
@@ -117,14 +117,14 @@ def main():
                 plot_risk_heatmap(G, pos, preds)
                 plot_sector_graph(G, preds)
                 plot_sector_risk_matrix(preds)
-                print("  ✓ Figures saved.\n")
+                print("  [ok] Figures saved.\n")
             else:
-                print("  [warn] edge_matrix_A.csv not found — skipping figures\n")
+                print("  [warn] edge_matrix_A.csv not found - skipping figures\n")
         except Exception as e:
             print(f"  [warn] Figure generation failed: {e}\n")
 
     # ── STEP 6: DASHBOARD ────────────────────────────────────────────────────
-    print("▶ STEP 6: Launching dashboard …")
+    print("[step 6] Launching dashboard ...")
     print("  Open your browser at http://127.0.0.1:8050\n")
     from generate_dashboard import app
     app.run(debug=False, port=8050, host="0.0.0.0")

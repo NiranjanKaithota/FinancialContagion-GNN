@@ -40,7 +40,7 @@ warnings.filterwarnings("ignore")
 from data_loader import (build_dataset, get_snapshot,
                           SECTOR_MAP, STOCK_UNIVERSE, NUMERIC_FEATS)
 from gnn_model import (HTCGNNModel, build_pyg_data, sector_idx_tensor,
-                        DEVICE, NUM_FEATURES, HIDDEN_DIM)
+                        DEVICE, NUM_FEATURES, HIDDEN_DIM, FocalLoss)
 from portfolio_agent import optimize_portfolio, aggregate_sector_weights
 
 UNIQUE_SECTORS = sorted(STOCK_UNIVERSE.keys())
@@ -54,6 +54,10 @@ INITIAL_CAPITAL = 1_000_000.0
 # ── Risk-free rate (annualised, for Sharpe) ───────────────────────────────────
 RISK_FREE_ANNUAL = 0.04
 RISK_FREE_DAILY  = RISK_FREE_ANNUAL / 252
+
+# ── Enhancements ──────────────────────────────────────────────────────────────
+TRANSACTION_COST_BPS      = 0.0010  # 10 bps dynamic transaction cost rebalancing drag
+CIRCUIT_BREAKER_THRESHOLD = 0.45    # Rotate to 100% Cash if average contagion > 0.45
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -104,7 +108,7 @@ def portfolio_return(weights: dict, daily_ret_slice: pd.DataFrame) -> pd.Series:
 # ──────────────────────────────────────────────────────────────────────────────
 def run_backtest():
     # ── 1. Load data ──────────────────────────────────────────────────────────
-    print("[backtest] Loading dataset …")
+    print("[backtest] Loading dataset ...")
     prices, features_long, adjacencies, crash_labels, spy = build_dataset()
     daily_ret = prices.pct_change().dropna()
 
@@ -114,7 +118,7 @@ def run_backtest():
 
     # ── 2. Load trained GNN ───────────────────────────────────────────────────
     if not os.path.exists(MODEL_PATH):
-        print("[backtest] No trained model found. Running training first …")
+        print("[backtest] No trained model found. Running training first ...")
         from gnn_model import train_model
         snap_dates    = sorted(adjacencies.keys())
         train_dates   = [d for d in snap_dates if d <= "2018-12-31"]
@@ -147,6 +151,14 @@ def run_backtest():
     model.eval()
     print(f"[backtest] Model loaded from {MODEL_PATH}")
 
+    # ── Initialize Online Fine-Tuning (WFFT) & Enhancements ───────────────────
+    optimizer_ft = torch.optim.AdamW(model.parameters(), lr=1e-4, weight_decay=1e-4)
+    criterion_ft = FocalLoss(alpha=0.75, gamma=2.0)
+    
+    snap_history = []
+    gnn_prev_drift = None
+    ew_prev_drift  = None
+
     # ── 3. Walk-forward loop (monthly rebalancing) ────────────────────────────
     current_date = pd.Timestamp(BACKTEST_START)
     end_date     = pd.Timestamp(BACKTEST_END)
@@ -157,14 +169,13 @@ def run_backtest():
     monthly_log = []
 
     current_weights = None
-    h_state         = None
     scaler          = None
 
     # equal-weight baseline
     all_tickers = [t for v in STOCK_UNIVERSE.values() for t in v]
     ew_weights  = {t: 1.0 / len(all_tickers) for t in all_tickers}
 
-    print(f"\n[backtest] Walk-forward: {BACKTEST_START} → {BACKTEST_END}")
+    print(f"\n[backtest] Walk-forward: {BACKTEST_START} -> {BACKTEST_END}")
     month_iter = []
     d = current_date
     while d < end_date:
@@ -186,22 +197,69 @@ def run_backtest():
         si = sector_idx_tensor(tickers, SECTOR_MAP, UNIQUE_SECTORS).to(DEVICE)
         data = build_pyg_data(X, A, y).to(DEVICE)
 
-        # ── Run GNN ───────────────────────────────────────────────────────────
+        H = len(snap_history)
+
+        # ── Walk-Forward Fine-Tuning (WFFT) Online Update ─────────────────────
+        # If we have a snapshot from 3 months ago (since labels look 63 trading days forward),
+        # its targets are now fully realized and can be used to update GNN weights online.
+        if H >= 3:
+            model.train()
+            snap_prev = snap_history[H-3]
+            h_prev_ft = snap_history[H-4]["h_state"] if (H-4 >= 0) else None
+            
+            for ft_epoch in range(5):
+                optimizer_ft.zero_grad()
+                logits_ft, _, _ = model(
+                    snap_prev["pyg_data"],
+                    snap_prev["sector_idx"],
+                    len(UNIQUE_SECTORS),
+                    h_prev=h_prev_ft.detach() if h_prev_ft is not None else None
+                )
+                loss_ft = criterion_ft(logits_ft, snap_prev["pyg_data"].y)
+                loss_ft.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+                optimizer_ft.step()
+
+        # ── Run GNN Inference on Current Snapshot ─────────────────────────────
+        model.eval()
+        h_prev_curr = snap_history[H-1]["h_state"] if (H-1 >= 0) else None
         with torch.no_grad():
-            logits, h_state, _ = model(data, si, len(UNIQUE_SECTORS),
-                                        h_prev=h_state)
+            logits, h_state_new, _ = model(
+                data,
+                si,
+                len(UNIQUE_SECTORS),
+                h_prev=h_prev_curr
+            )
         probs = torch.sigmoid(logits).squeeze().cpu().numpy()
         contagion_scores = pd.Series(probs, index=tickers)
 
-        # ── Optimize portfolio ────────────────────────────────────────────────
-        hist_ret = daily_ret.loc[:snap_str]
-        try:
-            current_weights = optimize_portfolio(
-                hist_ret, contagion_scores, A, verbose=False)
-        except Exception as e:
-            tqdm.write(f"  [warn] Optimization failed {snap_str}: {e}")
-            if current_weights is None:
-                current_weights = ew_weights.copy()
+        # Save snapshot and state in history for future fine-tuning
+        snap_history.append({
+            "date": snap_str,
+            "pyg_data": data,
+            "sector_idx": si,
+            "tickers": tickers,
+            "h_state": h_state_new.detach() if h_state_new is not None else None,
+        })
+
+        avg_contagion = float(contagion_scores.mean())
+
+        # ── Systemic Circuit Breaker ──────────────────────────────────────────
+        # If systemic contagion risk is extremely high, rotate 100% of capital to Cash
+        if avg_contagion > CIRCUIT_BREAKER_THRESHOLD:
+            cb_active = True
+            current_weights = {t: 0.0 for t in tickers}
+        else:
+            cb_active = False
+            # ── Optimize portfolio ────────────────────────────────────────────
+            hist_ret = daily_ret.loc[:snap_str]
+            try:
+                current_weights = optimize_portfolio(
+                    hist_ret, contagion_scores, A, verbose=False)
+            except Exception as e:
+                tqdm.write(f"  [warn] Optimization failed {snap_str}: {e}")
+                if current_weights is None:
+                    current_weights = ew_weights.copy()
 
         # ── Realised returns for this month ───────────────────────────────────
         mask = (daily_ret.index > snap_date) & (daily_ret.index <= next_date)
@@ -209,22 +267,80 @@ def run_backtest():
         if len(month_ret) == 0:
             continue
 
-        gnn_ret = portfolio_return(current_weights, month_ret)
+        if cb_active:
+            # Portfolio return is daily risk-free rate (Cash proxy)
+            gnn_ret = pd.Series(RISK_FREE_DAILY, index=month_ret.index)
+        else:
+            gnn_ret = portfolio_return(current_weights, month_ret)
+
         ew_ret  = portfolio_return(ew_weights,      month_ret)
         spy_day = spy_ret.reindex(month_ret.index).fillna(0.0)
 
-        gnn_records.append(gnn_ret)
-        ew_records.append(ew_ret)
+        # ── Drift-adjusted weights calculation for previous month-end ─────────
+        # For GNN Agent:
+        asset_cum_ret = (1 + month_ret).prod()
+        w_drift_old = {}
+        for t in tickers:
+            w_drift_old[t] = current_weights.get(t, 0.0) * asset_cum_ret.get(t, 1.0)
+        sum_drift = sum(w_drift_old.values())
+        if sum_drift > 1e-9:
+            w_drift_old = {t: w / sum_drift for t, w in w_drift_old.items()}
+        else:
+            w_drift_old = {t: 0.0 for t in tickers}
+
+        # For Equal Weight Agent:
+        ew_drift_old = {}
+        for t in tickers:
+            ew_drift_old[t] = ew_weights.get(t, 0.0) * asset_cum_ret.get(t, 1.0)
+        sum_ew_drift = sum(ew_drift_old.values())
+        if sum_ew_drift > 1e-9:
+            ew_drift_old = {t: w / sum_ew_drift for t, w in ew_drift_old.items()}
+        else:
+            ew_drift_old = {t: 0.0 for t in tickers}
+
+        # ── Compute turnover and transaction costs ────────────────────────────
+        # For GNN Agent:
+        if len(gnn_records) == 0 or gnn_prev_drift is None:
+            # First month: turnover is 1.0 (allocating from cash/capital)
+            turnover = 1.0
+        else:
+            turnover = sum(abs(current_weights.get(t, 0.0) - gnn_prev_drift.get(t, 0.0)) for t in tickers)
+
+        # For Equal Weight Agent:
+        if len(ew_records) == 0 or ew_prev_drift is None:
+            ew_turnover = 1.0
+        else:
+            ew_turnover = sum(abs(ew_weights.get(t, 0.0) - ew_prev_drift.get(t, 0.0)) for t in tickers)
+
+        gnn_prev_drift = w_drift_old
+        ew_prev_drift  = ew_drift_old
+
+        # Adjust returns for transaction costs (apply drag on the first trading day of the month)
+        gnn_ret_adj = gnn_ret.copy()
+        gnn_ret_adj.iloc[0] -= TRANSACTION_COST_BPS * turnover
+
+        ew_ret_adj = ew_ret.copy()
+        ew_ret_adj.iloc[0] -= TRANSACTION_COST_BPS * ew_turnover
+
+        gnn_records.append(gnn_ret_adj)
+        ew_records.append(ew_ret_adj)
         spy_records.append(spy_day)
 
         # Sector allocation this month
         sector_w = aggregate_sector_weights(current_weights, SECTOR_MAP)
+        if cb_active:
+            sector_w = {}
+            w_cash_val = 1.0
+        else:
+            w_cash_val = 0.0
+
         monthly_log.append({
             "date": snap_str,
-            "gnn_monthly_ret": float(gnn_ret.mean() * len(gnn_ret)),
-            "ew_monthly_ret":  float(ew_ret.mean()  * len(ew_ret)),
-            "avg_contagion":   float(contagion_scores.mean()),
+            "gnn_monthly_ret": float(gnn_ret_adj.sum()),
+            "ew_monthly_ret":  float(ew_ret_adj.sum()),
+            "avg_contagion":   avg_contagion,
             "max_contagion":   float(contagion_scores.max()),
+            "w_Cash":          w_cash_val,
             **{f"w_{s}": sector_w.get(s, 0.0) for s in UNIQUE_SECTORS},
         })
 
@@ -266,11 +382,28 @@ def run_backtest():
     metrics_df = pd.DataFrame(metrics).T
     metrics_df.to_csv("backtest_metrics.csv")
 
-    print("\n" + "═" * 65)
+    # Export performance metrics to JSON format
+    import json
+    metrics_json = {}
+    for strategy, vals in metrics.items():
+        metrics_json[strategy] = {
+            "annual_return": vals["Annual Return (%)"],
+            "annual_volatility": vals["Annual Volatility (%)"],
+            "sharpe_ratio": vals["Sharpe Ratio"],
+            "sortino_ratio": vals["Sortino Ratio"],
+            "max_drawdown": vals["Max Drawdown (%)"],
+            "calmar_ratio": vals["Calmar Ratio"],
+            "final_value": vals["Final Value ($)"]
+        }
+    with open("backtest_metrics.json", "w") as f:
+        json.dump(metrics_json, f, indent=4)
+    print("[backtest] Metrics saved -> backtest_metrics.json")
+
+    print("\n" + "=" * 65)
     print("  BACKTEST RESULTS SUMMARY")
-    print("═" * 65)
+    print("=" * 65)
     print(metrics_df.to_string())
-    print("═" * 65)
+    print("=" * 65)
 
     monthly_df = pd.DataFrame(monthly_log)
     monthly_df.to_csv("monthly_rebalance_log.csv", index=False)
@@ -405,8 +538,8 @@ def _plot_backtest(results: pd.DataFrame,
     plt.savefig("backtest_chart.png", dpi=200, bbox_inches="tight",
                 facecolor=DARK_BG)
     plt.close()
-    print("\n[backtest] Chart saved → backtest_chart.png")
-    print("[backtest] Results saved → backtest_results.csv, backtest_metrics.csv")
+    print("\n[backtest] Chart saved -> backtest_chart.png")
+    print("[backtest] Results saved -> backtest_results.csv, backtest_metrics.csv")
 
 
 # ──────────────────────────────────────────────────────────────────────────────

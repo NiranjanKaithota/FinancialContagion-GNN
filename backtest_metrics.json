@@ -1,0 +1,29 @@
+{
+    "GNN_Agent": {
+        "annual_return": 2.37,
+        "annual_volatility": 13.19,
+        "sharpe_ratio": -0.126,
+        "sortino_ratio": -0.086,
+        "max_drawdown": -31.65,
+        "calmar_ratio": 0.075,
+        "final_value": 1074629.0
+    },
+    "EqualWeight": {
+        "annual_return": 22.51,
+        "annual_volatility": 22.6,
+        "sharpe_ratio": 0.722,
+        "sortino_ratio": 0.864,
+        "max_drawdown": -38.38,
+        "calmar_ratio": 0.586,
+        "final_value": 2388213.0
+    },
+    "SPY": {
+        "annual_return": 0.0,
+        "annual_volatility": 0.0,
+        "sharpe_ratio": 0.0,
+        "sortino_ratio": -2519763.153,
+        "max_drawdown": 0.0,
+        "calmar_ratio": 0.0,
+        "final_value": 1000000.0
+    }
+}
